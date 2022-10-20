@@ -7,10 +7,7 @@ use Slim\Factory\AppFactory;
 $app = AppFactory::create();
 $app->addErrorMiddleware(true, true, true);
 
-$app->get('/', function ($request, $response) {
-    $response->getBody()->write('Welcome to Slim!');
-    return $response;
-    // Благодаря пакету slim/http этот же код можно записать короче
-    // return $response->write('Welcome to Slim!');
+$app->get('/', function ($req, $resp) {
+    return $resp->write('Welcome to Slim!');
 });
 $app->run();
