@@ -1,0 +1,26 @@
+{
+    "name": "hexlet/code",
+    "description": "Third PHP-project on Hexlet",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "Hexlet\\Code\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Dmitriy Nesterovich",
+            "email": "abcd-xyz@list.ru"
+        }
+    ],
+    "require": {
+        "slim/slim": "^4.10",
+        "slim/psr7": "^1.5",
+        "slim/http": "^1.2",
+        "slim/php-view": "^3.2",
+        "php-di/php-di": "^6.4"
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "*"
+    }
+}
