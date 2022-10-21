@@ -15,7 +15,7 @@ $app->run();*/
 
 
 //require __DIR__ . '/../vendor/autoload.php';
-/*require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 use Slim\Factory\AppFactory;
 use DI\Container;
@@ -43,9 +43,9 @@ $app->get('/public/', function ($req, $resp) {
     return $resp->write('Folder "public". req "/public/"');
 });
 
-$app->run();*/
-echo 'in public/index.php' . '<br>';
+$app->run();
+/*echo 'in public/index.php' . '<br>';
 echo __DIR__ . '<br>';
 print_r(scandir(__DIR__));
 echo '<br>';
-print_r(scandir(__DIR__ . '/..'));
+print_r(scandir(__DIR__ . '/..'));*/

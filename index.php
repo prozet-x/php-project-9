@@ -12,7 +12,7 @@ $app->get('/', function ($req, $resp) {
 });
 $app->run();*/
 
-/*require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 
 use Slim\Factory\AppFactory;
 use DI\Container;
@@ -36,10 +36,10 @@ $app->get('/', function ($req, $resp) {
     return $resp->write('Welcome to Slim!');
 });
 
-$app->run();*/
+$app->run();
 
-echo 'in /index.php' . '<br>';
+/*echo 'in /index.php' . '<br>';
 echo __DIR__ . '<br>';
 print_r(scandir(__DIR__));
 echo '<br>';
-print_r(scandir(__DIR__ . '/..'));
+print_r(scandir(__DIR__ . '/..'));*/
