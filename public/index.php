@@ -36,7 +36,11 @@ $app->add(MethodOverrideMiddleware::class);
 $router = $app->getRouteCollector()->getRouteParser();
 
 $app->get('/', function ($req, $resp) {
-    return $resp->write('Welcome to public Slim!');
+    return $resp->write('Folder "public". req "/"');
+});
+
+$app->get('/public/', function ($req, $resp) {
+    return $resp->write('Folder "public". req "/public/"');
 });
 
 $app->run();
