@@ -14,7 +14,8 @@ $app->run();*/
 
 
 
-require __DIR__ . '/../vendor/autoload.php';
+//require __DIR__ . '/../vendor/autoload.php';
+require '/app/vendor/autoload.php';
 
 use Slim\Factory\AppFactory;
 use DI\Container;
