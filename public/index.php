@@ -45,4 +45,7 @@ $app->get('/public/', function ($req, $resp) {
 
 $app->run();*/
 
-echo 123;
+echo __DIR__ . '<br>';
+print_r(scandir(__DIR__));
+echo '<br>';
+print_r(scandir(__DIR__ . '/..'));
