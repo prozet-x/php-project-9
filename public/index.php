@@ -12,7 +12,7 @@ $app->get('/', function ($req, $resp) {
 });
 $app->run();*/
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 use Slim\Factory\AppFactory;
 use DI\Container;
