@@ -44,7 +44,7 @@ $app->get('/public/', function ($req, $resp) {
 });
 
 $app->run();*/
-
+echo 'in public/index.php' . '<br>';
 echo __DIR__ . '<br>';
 print_r(scandir(__DIR__));
 echo '<br>';
