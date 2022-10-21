@@ -33,7 +33,7 @@ $app->add(MethodOverrideMiddleware::class);
 $router = $app->getRouteCollector()->getRouteParser();
 
 $app->get('/', function ($req, $resp) {
-    return $resp->write('Welcome to Slim!');
+    return $resp->write('Welcome to public Slim!');
 });
 
 $app->run();
