@@ -1,20 +1,5 @@
 <?php
 
-/*require __DIR__ . '/../vendor/autoload.php';
-
-use Slim\Factory\AppFactory;
-
-$app = AppFactory::create();
-$app->addErrorMiddleware(true, true, true);
-
-$app->get('/', function ($req, $resp) {
-    return $resp->write('Welcome to Slim!');
-});
-$app->run();*/
-
-
-
-//require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../vendor/autoload.php';
 
 use Slim\Factory\AppFactory;
@@ -39,12 +24,29 @@ $app->get('/', function ($req, $resp) {
 });
 
 $app -> post('/urls', function($req, $resp) {
-    $inputedData = $req -> getParserBodyParam('url');
+    $inputedData = $req -> getParsedBodyParam('url');
+    /*$dbh = new PDO('pgsql:host=localhost;dbname=phpproj3test', 'dima');
+    $res = '';
+    foreach($dbh->query('SELECT * from urls') as $row) {
+        $res .= $row;
+    }
+    $dbh = null;*/
+
+    //INSTALL PGSQL-provider: apt-get install php-pgsql. Then restart appache. And you will need to create a pass for user
+
+
+    $dsn = "pgsql:host=localhost;port=5432;dbname=phpproj3test;";
+    $pdo = new PDO($dsn, 'dima', 'pwd', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+
+    if ($pdo) {
+        $res = '';
+        foreach($pdo->query('SELECT * from urls') as $row) {
+            $res .= $row['name'] . '   ' . $row['created_at'];
+        }
+        return $resp -> write($res);
+    }
+
+    return $resp -> write(count(PDO::getAvailableDrivers()));
 });
 
 $app->run();
-/*echo 'in public/index.php' . '<br>';
-echo __DIR__ . '<br>';
-print_r(scandir(__DIR__));
-echo '<br>';
-print_r(scandir(__DIR__ . '/..'));*/
