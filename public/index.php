@@ -38,6 +38,10 @@ $app->get('/', function ($req, $resp) {
     return $this -> get('renderer') -> render($resp, 'main.phtml');
 });
 
+$app -> post('/urls', function($req, $resp) {
+    $inputedData = $req -> getParserBodyParam('url');
+});
+
 $app->run();
 /*echo 'in public/index.php' . '<br>';
 echo __DIR__ . '<br>';
