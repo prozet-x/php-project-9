@@ -25,7 +25,6 @@ session_start();
 
 $container = new Container();
 $container->set('renderer', function () {
-    // Параметром передается базовая директория, в которой будут храниться шаблоны
     return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
 });
 
@@ -36,11 +35,7 @@ $app->add(MethodOverrideMiddleware::class);
 $router = $app->getRouteCollector()->getRouteParser();
 
 $app->get('/', function ($req, $resp) {
-    return $resp->write('Folder "public". req "/"');
-});
-
-$app->get('/public/', function ($req, $resp) {
-    return $resp->write('Folder "public". req "/public/"');
+    return $this -> get('renderer') -> render($resp, 'main.phtml');
 });
 
 $app->run();
