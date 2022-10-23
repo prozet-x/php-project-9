@@ -28,6 +28,7 @@
       <path value="$PROJECT_DIR$/vendor/php-di/php-di" />
       <path value="$PROJECT_DIR$/vendor/squizlabs/php_codesniffer" />
       <path value="$PROJECT_DIR$/vendor/slim/flash" />
+      <path value="$PROJECT_DIR$/vendor/vlucas/valitron" />
     </include_path>
   </component>
 </project>

@@ -25,26 +25,29 @@ $app->get('/', function ($req, $resp) {
 
 $app -> post('/urls', function($req, $resp) {
     $inputedData = $req -> getParsedBodyParam('url');
-    /*$dbh = new PDO('pgsql:host=localhost;dbname=phpproj3test', 'dima');
-    $res = '';
-    foreach($dbh->query('SELECT * from urls') as $row) {
-        $res .= $row;
+
+    $v = new Valitron\Validator(array('url' => $inputedData['name']));
+    $v->rule('required', 'url');
+    $v->rule('url', 'url');
+    if($v->validate()) {
+        $dsn = "pgsql:host=localhost;port=5432;dbname=phpproj3test;";
+        $pdo = new PDO($dsn, 'dima', 'pwd', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+
+        if ($pdo) {
+            $res = '';
+            foreach($pdo->query('SELECT * from urls') as $row) {
+                $res .= $row['name'] . '   ' . $row['created_at'];
+            }
+            return $resp -> write($res);
+        }
+    } else {
+        // Errors
+        return $resp -> write('problems');
     }
-    $dbh = null;*/
+
+
 
     //INSTALL PGSQL-provider: apt-get install php-pgsql. Then restart appache. And you will need to create a pass for user
-
-
-    $dsn = "pgsql:host=localhost;port=5432;dbname=phpproj3test;";
-    $pdo = new PDO($dsn, 'dima', 'pwd', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-
-    if ($pdo) {
-        $res = '';
-        foreach($pdo->query('SELECT * from urls') as $row) {
-            $res .= $row['name'] . '   ' . $row['created_at'];
-        }
-        return $resp -> write($res);
-    }
 
     return $resp -> write(count(PDO::getAvailableDrivers()));
 });
