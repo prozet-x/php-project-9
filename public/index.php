@@ -13,6 +13,10 @@ $container->set('renderer', function () {
     return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
 });
 
+$container -> set('flash', function () {
+    return new \Slim\Flash\Messages();
+});
+
 $app = AppFactory::createFromContainer($container);
 $app->addErrorMiddleware(true, true, true);
 $app->add(MethodOverrideMiddleware::class);
@@ -20,20 +24,28 @@ $app->add(MethodOverrideMiddleware::class);
 $router = $app->getRouteCollector()->getRouteParser();
 
 $app->get('/', function ($req, $resp) {
-    return $this -> get('renderer') -> render($resp, 'main.phtml');
-});
+    $params = [];
+    $messages = $this -> get('flash') -> getMessages();
+    if (!empty($messages)) {
+        $params['messages'] = $messages;
+    }
+    return $this -> get('renderer') -> render($resp, 'main.phtml', $params);
+}) -> setName('main');
 
-$app -> post('/urls', function($req, $resp) {
-    $inputedData = $req -> getParsedBodyParam('url');
+$app -> post('/urls', function($req, $resp) use ($router) {
+    $inputedURL = $req -> getParsedBodyParam('url', null);
 
-    $v = new Valitron\Validator(array('url' => $inputedData['name']));
-    $v->rule('required', 'url');
-    $v->rule('required', 'url');
-    $v->rule('lengthMax', 'url', 255);
-    $v->rule('url', 'url');
-    if($v->validate()) {
+    if ($inputedURL === null) {
+        $this -> get('flash') -> addMessage('warning', 'Нужно вести адрес веб-страницы');
+        return $resp -> withRedirect($router -> urlFor('main'));
+    }
+
+
+    $validator = new Valitron\Validator(array('url' => $inputedURL['name']));
+    $validator -> rule('required', 'url') -> rule('lengthMax', 'url', 255) -> rule('url', 'url');
+    if($validator->validate()) {
         $dsn = "pgsql:host=localhost;port=5432;dbname=phpproj3test;";
-        $pdo = new PDO($dsn, 'prozex', 'pwd', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $pdo = new PDO($dsn, 'dima', 'pwd', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
         if ($pdo) {
             $res = '';
@@ -43,8 +55,7 @@ $app -> post('/urls', function($req, $resp) {
             return $resp -> write($res);
         }
     } else {
-        // Errors
-        return $resp -> write('problems');
+        return $this -> get('renderer') -> render($resp, 'main.phtml', ['badURL' => true, 'inputedURL' => $inputedURL['name']]);
     }
 
 
