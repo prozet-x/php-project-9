@@ -28,10 +28,12 @@ $app -> post('/urls', function($req, $resp) {
 
     $v = new Valitron\Validator(array('url' => $inputedData['name']));
     $v->rule('required', 'url');
+    $v->rule('required', 'url');
+    $v->rule('lengthMax', 'url', 255);
     $v->rule('url', 'url');
     if($v->validate()) {
         $dsn = "pgsql:host=localhost;port=5432;dbname=phpproj3test;";
-        $pdo = new PDO($dsn, 'dima', 'pwd', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $pdo = new PDO($dsn, 'prozex', 'pwd', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
         if ($pdo) {
             $res = '';
