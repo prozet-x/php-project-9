@@ -40,14 +40,32 @@ $app -> post('/urls', function($req, $resp) use ($router) {
         return $resp -> withRedirect($router -> urlFor('main'));
     }
 
-
-    $validator = new Valitron\Validator(array('url' => $inputedURL['name']));
-    $validator -> rule('required', 'url') -> rule('lengthMax', 'url', 255) -> rule('url', 'url');
+    $url = parse_url($inputedURL['name']);
+    $scheme = $url['scheme'];
+    $host = $url['host'];
+    $validator = new Valitron\Validator(array('url' => $inputedURL['name'], 'host' => $host));
+    $validator -> rule('required', 'url')
+        -> rule('lengthMax', 'url', 255)
+        -> rule('url', 'url')
+        -> rule('contains', 'host', '.');
     if($validator->validate()) {
-        $dsn = "pgsql:host=localhost;port=5432;dbname=phpproj3test;";
-        $pdo = new PDO($dsn, 'dima', 'pwd', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $connectionString = "pgsql:host=localhost;port=5432;dbname=phpproj3test;";
+        /*try {
+
+        }
+        catch () {
+
+        }*/
+        $pdo = new PDO($connectionString, 'prozex', 'pwd', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
         if ($pdo) {
+            $resOfQuery = $pdo->query("SELECT COUNT(*) AS counts FROM urls WHERE name='{$scheme}://{$host}'");
+            if (($resOfQuery -> fetch())['counts'] === 0) {
+                $pdo->query("INSERT INTO urls (name, created_at) VALUES ('{$scheme}://{$host}', current_timestamp)");
+            } else {
+                return $resp -> write('Already exists!!!');
+            }
+
             $res = '';
             foreach($pdo->query('SELECT * from urls') as $row) {
                 $res .= $row['name'] . '   ' . $row['created_at'];
