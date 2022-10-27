@@ -33,12 +33,9 @@ $app->get('/', function ($req, $resp) {
 }) -> setName('main');
 
 $app->get('/urls', function ($req, $resp) use ($router) {
-    try {
-        $connection = getconnectionToDB();
-    }
-    catch (Exception $e) {
-        $this -> get('flash') -> addMessage('error', 'Возникла внутренняя ошибка сервера. Попробуйте выполнить действие позже.');
-        return $resp -> withRedirect($router -> urlFor('main'), 302);
+    $connection = getConnectionToDB();
+    if ($connection === false) {
+        return redirectToMainWithInternalError($this, $resp, $router);
     }
 
     $queryForUrls = "SELECT id, name FROM urls ORDER BY id DESC";
@@ -52,12 +49,9 @@ $app->get('/urls', function ($req, $resp) use ($router) {
 }) -> setName('urls');
 
 $app->get('/urls/{id}', function ($req, $resp, $args) use ($router) {
-    try {
-        $connection = getconnectionToDB();
-    }
-    catch (Exception $e) {
-        $this -> get('flash') -> addMessage('error', 'Возникла внутренняя ошибка сервера. Попробуйте выполнить действие позже.');
-        return $resp -> withRedirect($router -> urlFor('main'), 302);
+    $connection = getConnectionToDB();
+    if ($connection === false) {
+        return redirectToMainWithInternalError($this, $resp, $router);
     }
 
     $id = $args['id'];
@@ -71,12 +65,9 @@ $app->get('/urls/{id}', function ($req, $resp, $args) use ($router) {
 }) -> setName('urlID');
 
 $app -> post('/clearurls', function ($req, $resp) use ($router) {
-    try {
-        $connection = getconnectionToDB();
-    }
-    catch (Exception $e) {
-        $this -> get('flash') -> addMessage('error', 'Возникла внутренняя ошибка сервера. Попробуйте выполнить действие позже.');
-        return $resp -> withRedirect($router -> urlFor('main'), 302);
+    $connection = getConnectionToDB();
+    if ($connection === false) {
+        return redirectToMainWithInternalError($this, $resp, $router);
     }
 
     $queryForClearing = "DELETE FROM urls";
@@ -107,12 +98,9 @@ $app -> post('/urls', function($req, $resp) use ($router) {
         return $this -> get('renderer') -> render($resp, 'main.phtml', ['badURL' => true, 'inputedURL' => $inputedURL['name']]);
     }
 
-    try {
-        $connection = getconnectionToDB();
-    }
-    catch (Exception $e) {
-        $this -> get('flash') -> addMessage('error', 'Возникла внутренняя ошибка сервера. Попробуйте выполнить действие позже.');
-        return $resp -> withRedirect($router -> urlFor('main'), 302);
+    $connection = getConnectionToDB();
+    if ($connection === false) {
+        return redirectToMainWithInternalError($this, $resp, $router);
     }
 
     $queryForExisting = "SELECT COUNT(*) AS counts FROM urls WHERE name='{$scheme}://{$host}'";
@@ -125,20 +113,15 @@ $app -> post('/urls', function($req, $resp) use ($router) {
         $this -> get('flash') -> addMessage('warning', 'Страница уже существует');
     }
     return $resp -> withRedirect($router -> urlFor('main'), 302);
-    /*$res = '';
-    foreach($connection->query('SELECT * from urls') as $row) {
-        $res .= $row['name'] . '   ' . $row['created_at'];
-    }
-    return $resp -> write($res);*/
-
-
-
-
-
     //INSTALL PGSQL-provider: apt-get install php-pgsql. Then restart appache. And you will need to create a pass for user
 });
 
-function getconnectionToDB() {
+function redirectToMainWithInternalError($DIContainer, $resp, $router) {
+    $DIContainer -> get('flash') -> addMessage('error', 'Возникла внутренняя ошибка сервера. Попробуйте выполнить действие позже.');
+    return $resp -> withRedirect($router -> urlFor('main'), 302);
+}
+
+function getConnectionToDB() {
     $dbDriver = 'pgsql';
     $dbHost = 'localhost';
     $dbPort = '5432';
@@ -146,7 +129,12 @@ function getconnectionToDB() {
     $dbUserName = 'prozex';
     $dbUserPassword = 'pwd';
     $connectionString = "{$dbDriver}:host={$dbHost};port={$dbPort};dbname={$dbName};";
-    return new PDO($connectionString, $dbUserName, $dbUserPassword, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    try {
+        return new PDO($connectionString, $dbUserName, $dbUserPassword, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    }
+    catch (Exception) {
+        return false;
+    }
 }
 
 $app->run();
