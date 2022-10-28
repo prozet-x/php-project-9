@@ -17,8 +17,8 @@ test-db-reset:
 	dropdb phpproj3test || true
 	createdb phpproj3test
 
-create_table-urls:
+create_tables:
 	psql phpproj3 < database.sql
 
-test-create_table-urls:
+test-create_tables:
 	psql phpproj3test < database.sql

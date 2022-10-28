@@ -55,12 +55,25 @@ $app->get('/urls/{id}', function ($req, $resp, $args) use ($router) {
     }
 
     $id = $args['id'];
+
     $queryForUrl = "SELECT * FROM urls WHERE id={$id}";
     $resQueryForUrl = $connection -> query($queryForUrl);
     $urlData = $resQueryForUrl -> fetch();
-    $dateTime = new DateTime($urlData['created_at']);
-    $dateTimeFormatted = $dateTime->format('Y-m-d H:i:s');
-    $params = ['url' => ['id' => $id, 'name' => $urlData['name'], 'created_at' => $dateTimeFormatted]];
+    $params = ['url' => ['id' => $id, 'name' => $urlData['name'], 'created_at' => $urlData['created_at']]];
+
+    $queryForUrlChecks = "SELECT * FROM url_checks WHERE url_id={$id} ORDER BY id DESC";
+    $resQueryForUrlChecks = $connection -> query($queryForUrlChecks);
+    $urlChecks = [];
+    foreach ($resQueryForUrlChecks as $row) {
+        $urlChecks[] = ['id' => $row['id'], 'created_at' => $row['created_at']];
+    }
+    $params['urlChecks'] = $urlChecks;
+
+    $messages = $this -> get('flash') -> getMessages();
+    if (!empty($messages)) {
+        $params['messages'] = $messages;
+    }
+
     return $this -> get('renderer') -> render($resp, 'url.phtml', $params);
 }) -> setName('urlID');
 
@@ -106,7 +119,7 @@ $app -> post('/urls', function($req, $resp) use ($router) {
     $queryForExisting = "SELECT COUNT(*) AS counts FROM urls WHERE name='{$scheme}://{$host}'";
     $resOfQueryForExisting = $connection->query($queryForExisting);
     if (($resOfQueryForExisting -> fetch())['counts'] === 0) {
-        $queryForInsertNewData = "INSERT INTO urls (name, created_at) VALUES ('{$scheme}://{$host}', current_timestamp)";
+        $queryForInsertNewData = "INSERT INTO urls (name, created_at) VALUES ('{$scheme}://{$host}', date_trunc('second', current_timestamp))";
         $connection->query($queryForInsertNewData);
         $this -> get('flash') -> addMessage('success', 'Страница успешно добавлена');
     } else {
@@ -114,6 +127,18 @@ $app -> post('/urls', function($req, $resp) use ($router) {
     }
     return $resp -> withRedirect($router -> urlFor('main'), 302);
     //INSTALL PGSQL-provider: apt-get install php-pgsql. Then restart appache. And you will need to create a pass for user
+});
+
+$app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
+    $id = $args['id'];
+    $connection = getConnectionToDB();
+    if ($connection === false) {
+        return redirectToMainWithInternalError($this, $resp, $router);
+    }
+    $queryForInsertNewCheck = "INSERT INTO url_checks (url_id, created_at) VALUES ('{$id}', date_trunc('second', current_timestamp))";
+    $connection->query($queryForInsertNewCheck);
+    $this -> get('flash') -> addMessage('success', 'Страница успешно проверена');
+    return $resp -> withRedirect($router -> urlFor('urlID', ['id' => $id]), 302);
 });
 
 function redirectToMainWithInternalError($DIContainer, $resp, $router) {
