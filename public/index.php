@@ -5,6 +5,7 @@ require __DIR__ . '/../vendor/autoload.php';
 use Slim\Factory\AppFactory;
 use DI\Container;
 use Slim\Middleware\MethodOverrideMiddleware;
+use GuzzleHttp\Client;
 
 session_start();
 
@@ -38,13 +39,20 @@ $app->get('/urls', function ($req, $resp) use ($router) {
         return redirectToMainWithInternalError($this, $resp, $router);
     }
 
-    $queryForUrls = "SELECT id, name FROM urls ORDER BY id DESC";
+    $queryForUrls = "SELECT urls.id AS urls_id, name, MAX(url_checks.created_at) as last_check_time FROM urls LEFT JOIN url_checks ON urls.id = url_checks.url_id GROUP BY urls_id ORDER BY urls_id DESC";
     $resQueryForUrls = $connection -> query($queryForUrls);
     $urls = [];
     foreach ($resQueryForUrls as $row) {
-        $urls[] = ['id' => $row['id'], 'name' => $row['name']];
+        $urls[] = ['id' => $row['urls_id'], 'name' => $row['name'], 'lastCheckTime' => $row['last_check_time']];
     }
+
     $params = ['urls' => $urls];
+
+    $messages = $this -> get('flash') -> getMessages();
+    if (!empty($messages)) {
+        $params['messages'] = $messages;
+    }
+
     return $this -> get('renderer') -> render($resp, 'urls.phtml', $params);
 }) -> setName('urls');
 
@@ -83,9 +91,9 @@ $app -> post('/clearurls', function ($req, $resp) use ($router) {
         return redirectToMainWithInternalError($this, $resp, $router);
     }
 
-    $queryForClearing = "DELETE FROM urls";
+    $queryForClearing = "TRUNCATE urls, url_checks";
     $connection->query($queryForClearing);
-    $this -> get('flash') -> addMessage('warning', 'Таблица urls очищена');
+    $this -> get('flash') -> addMessage('warning', 'Таблицы очищены');
     return $resp -> withRedirect($router -> urlFor('main'), 302);
 });
 
@@ -131,10 +139,22 @@ $app -> post('/urls', function($req, $resp) use ($router) {
 
 $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
     $id = $args['id'];
+
     $connection = getConnectionToDB();
     if ($connection === false) {
         return redirectToMainWithInternalError($this, $resp, $router);
     }
+
+    $queryGetUrl = "SELECT name FROM urls WHERE id='{$id}'";
+    $resQueryGetUrl = $connection->query($queryGetUrl);
+    $fetchedRes = $resQueryGetUrl -> fetch();
+    if ($fetchedRes === false) {
+        $this -> get('flash') -> addMessage('error', 'При проверке возникла ошибка. Такой записи не существует.');
+        return $resp -> withRedirect($router -> urlFor('urls'), 303);
+    }
+
+    $client = new Client([]);
+
     $queryForInsertNewCheck = "INSERT INTO url_checks (url_id, created_at) VALUES ('{$id}', date_trunc('second', current_timestamp))";
     $connection->query($queryForInsertNewCheck);
     $this -> get('flash') -> addMessage('success', 'Страница успешно проверена');
