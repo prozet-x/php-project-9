@@ -38,12 +38,26 @@ $app->get('/urls', function ($req, $resp) use ($router) {
     if ($connection === false) {
         return redirectToMainWithInternalError($this, $resp, $router);
     }
+    //МОЖНО РУКАМИ ВВЕСТТИ АДРЕС 127.0.0.1:8000/urls/<НЕСУЩЕСТВУЮЩИЙ ИД>, И САЙТ НЕ ВЫДАСТ 404 ОШИБКИ
+    //$queryForUrls = "SELECT urls.id AS urls_id, name, MAX(url_checks.created_at) AS last_check_time, status_code FROM urls LEFT JOIN url_checks ON urls.id = url_checks.url_id GROUP BY urls_id ORDER BY urls_id DESC";
 
-    $queryForUrls = "SELECT urls.id AS urls_id, name, MAX(url_checks.created_at) as last_check_time FROM urls LEFT JOIN url_checks ON urls.id = url_checks.url_id GROUP BY urls_id ORDER BY urls_id DESC";
+    $queryForUrls = "SELECT sq1.url_id AS urlid, created_at FROM (SELECT url_id, MAX(id) AS max_id FROM url_checks GROUP BY url_id) AS sq1 LEFT JOIN url_checks ON sq1.max_id = url_checks.id";
+
     $resQueryForUrls = $connection -> query($queryForUrls);
     $urls = [];
     foreach ($resQueryForUrls as $row) {
-        $urls[] = ['id' => $row['urls_id'], 'name' => $row['name'], 'lastCheckTime' => $row['last_check_time']];
+        /*$urls[] = [
+            'id' => $row['urls_id'],
+            'name' => $row['name'],
+            'status_code' => $row['status_code'],
+            'lastCheckTime' => $row['last_check_time']
+        ];*/
+        $urls[] = [
+            'id' => $row['urlid'],
+            'name' => $row['urlid'],
+            'status_code' => 123,
+            'lastCheckTime' => $row['created_at']
+        ];
     }
 
     $params = ['urls' => $urls];
@@ -64,17 +78,9 @@ $app->get('/urls/{id}', function ($req, $resp, $args) use ($router) {
 
     $id = $args['id'];
 
-    $queryForUrl = "SELECT * FROM urls WHERE id={$id}";
-    $resQueryForUrl = $connection -> query($queryForUrl);
-    $urlData = $resQueryForUrl -> fetch();
-    $params = ['url' => ['id' => $id, 'name' => $urlData['name'], 'created_at' => $urlData['created_at']]];
-
-    $queryForUrlChecks = "SELECT * FROM url_checks WHERE url_id={$id} ORDER BY id DESC";
-    $resQueryForUrlChecks = $connection -> query($queryForUrlChecks);
-    $urlChecks = [];
-    foreach ($resQueryForUrlChecks as $row) {
-        $urlChecks[] = ['id' => $row['id'], 'created_at' => $row['created_at']];
-    }
+    $urlData = getUrlDataById($connection, $id);
+    $params = ['url' => $urlData];
+    $urlChecks = getUrlChecksById($connection, $id);
     $params['urlChecks'] = $urlChecks;
 
     $messages = $this -> get('flash') -> getMessages();
@@ -145,7 +151,7 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
         return redirectToMainWithInternalError($this, $resp, $router);
     }
 
-    $queryGetUrl = "SELECT name FROM urls WHERE id='{$id}'";
+    $queryGetUrl = "SELECT name FROM urls WHERE id={$id}";
     $resQueryGetUrl = $connection->query($queryGetUrl);
     $fetchedRes = $resQueryGetUrl -> fetch();
     if ($fetchedRes === false) {
@@ -153,13 +159,42 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
         return $resp -> withRedirect($router -> urlFor('urls'), 303);
     }
 
-    $client = new Client([]);
+    $client = new Client(['base_uri' => $fetchedRes['name'], 'timeout' => 5.0]);
 
-    $queryForInsertNewCheck = "INSERT INTO url_checks (url_id, created_at) VALUES ('{$id}', date_trunc('second', current_timestamp))";
+    $response = null;
+    try {
+        $response = $client -> request('GET', '/');
+    }
+    catch (Exception) {
+        $this -> get('flash') -> addMessage('error', 'Произошла ошибка при проверке');
+        return $resp -> withStatus(404) -> withRedirect($router -> urlFor('urlID', ['id' => $id]));
+    }
+
+    $statusCodeOfResponse = $response -> getStatusCode();
+    $queryForInsertNewCheck = "INSERT INTO url_checks (url_id, status_code, created_at) VALUES ('{$id}', {$statusCodeOfResponse}, date_trunc('second', current_timestamp))";
     $connection->query($queryForInsertNewCheck);
     $this -> get('flash') -> addMessage('success', 'Страница успешно проверена');
     return $resp -> withRedirect($router -> urlFor('urlID', ['id' => $id]), 302);
 });
+
+function getUrlDataById($connection, $id)
+{
+    $queryForUrl = "SELECT * FROM urls WHERE id={$id}";
+    $resQueryForUrl = $connection -> query($queryForUrl);
+    $urlData = $resQueryForUrl -> fetch();
+    return ['id' => $urlData['id'], 'name' => $urlData['name'], 'created_at' => $urlData['created_at']];
+}
+
+function getUrlChecksById($connection, $id)
+{
+    $queryForUrlChecks = "SELECT * FROM url_checks WHERE url_id={$id} ORDER BY id DESC";
+    $resQueryForUrlChecks = $connection -> query($queryForUrlChecks);
+    $urlChecks = [];
+    foreach ($resQueryForUrlChecks as $row) {
+        $urlChecks[] = ['id' => $row['id'], 'created_at' => $row['created_at'], 'status_code' => $row['status_code']];
+    }
+    return $urlChecks;
+}
 
 function redirectToMainWithInternalError($DIContainer, $resp, $router) {
     $DIContainer -> get('flash') -> addMessage('error', 'Возникла внутренняя ошибка сервера. Попробуйте выполнить действие позже.');
@@ -171,7 +206,7 @@ function getConnectionToDB() {
     $dbHost = 'localhost';
     $dbPort = '5432';
     $dbName = 'phpproj3test';
-    $dbUserName = 'prozex';
+    $dbUserName = 'dima';
     $dbUserPassword = 'pwd';
     $connectionString = "{$dbDriver}:host={$dbHost};port={$dbPort};dbname={$dbName};";
     try {
