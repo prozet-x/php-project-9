@@ -41,22 +41,43 @@ $app->get('/urls', function ($req, $resp) use ($router) {
     //МОЖНО РУКАМИ ВВЕСТТИ АДРЕС 127.0.0.1:8000/urls/<НЕСУЩЕСТВУЮЩИЙ ИД>, И САЙТ НЕ ВЫДАСТ 404 ОШИБКИ
     //$queryForUrls = "SELECT urls.id AS urls_id, name, MAX(url_checks.created_at) AS last_check_time, status_code FROM urls LEFT JOIN url_checks ON urls.id = url_checks.url_id GROUP BY urls_id ORDER BY urls_id DESC";
 
-    $queryForUrls = "SELECT sq1.url_id AS urlid, created_at FROM (SELECT url_id, MAX(id) AS max_id FROM url_checks GROUP BY url_id) AS sq1 LEFT JOIN url_checks ON sq1.max_id = url_checks.id";
+    $queryForUrls = "SELECT
+                        urls.id AS id_of_url,
+                        name,
+                        last_check_req.created_at AS last_check_datetime,
+                        name,
+                        status_code 
+                    FROM
+                        urls
+                        LEFT JOIN
+                        (SELECT
+                             max_id_req.url_id AS url_id,
+                             created_at,
+                             status_code
+                         FROM
+                             (SELECT
+                                  url_id,
+                                  MAX(id) AS max_id
+                              FROM url_checks
+                              GROUP BY url_id
+                             ) AS max_id_req
+                             LEFT JOIN
+                                 url_checks
+                             ON
+                                 max_id = url_checks.id
+                        ) AS last_check_req
+                        ON
+                            urls.id = last_check_req.url_id
+                    ORDER BY id_of_url DESC";
 
     $resQueryForUrls = $connection -> query($queryForUrls);
     $urls = [];
     foreach ($resQueryForUrls as $row) {
-        /*$urls[] = [
-            'id' => $row['urls_id'],
+        $urls[] = [
+            'id' => $row['id_of_url'],
             'name' => $row['name'],
             'status_code' => $row['status_code'],
-            'lastCheckTime' => $row['last_check_time']
-        ];*/
-        $urls[] = [
-            'id' => $row['urlid'],
-            'name' => $row['urlid'],
-            'status_code' => 123,
-            'lastCheckTime' => $row['created_at']
+            'lastCheckTime' => $row['last_check_datetime']
         ];
     }
 
