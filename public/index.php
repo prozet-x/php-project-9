@@ -6,6 +6,7 @@ use Slim\Factory\AppFactory;
 use DI\Container;
 use Slim\Middleware\MethodOverrideMiddleware;
 use GuzzleHttp\Client;
+use DiDom\Document;
 
 session_start();
 
@@ -175,12 +176,13 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
     $queryGetUrl = "SELECT name FROM urls WHERE id={$id}";
     $resQueryGetUrl = $connection->query($queryGetUrl);
     $fetchedRes = $resQueryGetUrl -> fetch();
+    $url = $fetchedRes['name'];
     if ($fetchedRes === false) {
         $this -> get('flash') -> addMessage('error', 'При проверке возникла ошибка. Такой записи не существует.');
         return $resp -> withRedirect($router -> urlFor('urls'), 303);
     }
 
-    $client = new Client(['base_uri' => $fetchedRes['name'], 'timeout' => 5.0]);
+    $client = new Client(['base_uri' => $url, 'timeout' => 5.0]);
 
     $response = null;
     try {
@@ -192,10 +194,36 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
     }
 
     $statusCodeOfResponse = $response -> getStatusCode();
-    $queryForInsertNewCheck = "INSERT INTO url_checks (url_id, status_code, created_at) VALUES ('{$id}', {$statusCodeOfResponse}, date_trunc('second', current_timestamp))";
-    $connection->query($queryForInsertNewCheck);
-    $this -> get('flash') -> addMessage('success', 'Страница успешно проверена');
-    return $resp -> withRedirect($router -> urlFor('urlID', ['id' => $id]), 302);
+    $bodyOfResponse = (string) ($response -> getBody());
+
+    $h1 = null;
+    $title = null;
+    $description = null;
+    if ($statusCodeOfResponse === 200) {
+        $document = new Document($bodyOfResponse);
+        $h1Elements = $document->find('h1');
+        if (count($h1Elements) > 0) {
+            $h1 = $h1Elements[0] -> text();
+        }
+        $titleElements = $document -> find ('title');
+        if (count($titleElements) > 0) {
+            $title = optional($titleElements[0]) -> text();
+        }
+        $metaKeywordElements = $document -> find ('meta[name=description]');
+        if (count($metaKeywordElements) > 0) {
+            $description = optional($metaKeywordElements[0]) -> content;
+        }
+    }
+
+    try {
+        $queryForInsertNewCheck = "INSERT INTO url_checks (url_id, status_code, created_at, h1, title, description) VALUES ('{$id}', {$statusCodeOfResponse}, date_trunc('second', current_timestamp), '{$h1}', '{$title}', '{$description}')";
+        $connection->query($queryForInsertNewCheck);
+    }
+    catch (Exception) {
+        return $this-> get('renderer') -> render($resp -> withStatus(500), 'error500.phtml');
+    }
+    $this->get('flash')->addMessage('success', 'Страница успешно проверена');
+    return $resp->withRedirect($router->urlFor('urlID', ['id' => $id]), 302);
 });
 
 function getUrlDataById($connection, $id)
@@ -212,7 +240,14 @@ function getUrlChecksById($connection, $id)
     $resQueryForUrlChecks = $connection -> query($queryForUrlChecks);
     $urlChecks = [];
     foreach ($resQueryForUrlChecks as $row) {
-        $urlChecks[] = ['id' => $row['id'], 'created_at' => $row['created_at'], 'status_code' => $row['status_code']];
+        $urlChecks[] = [
+            'id' => $row['id'],
+            'created_at' => $row['created_at'],
+            'status_code' => $row['status_code'],
+            'h1' => $row['h1'],
+            'title' => $row['title'],
+            'description' => $row['description']
+        ];
     }
     return $urlChecks;
 }
@@ -227,7 +262,7 @@ function getConnectionToDB() {
     $dbHost = 'localhost';
     $dbPort = '5432';
     $dbName = 'phpproj3test';
-    $dbUserName = 'dima';
+    $dbUserName = 'prozex';
     $dbUserPassword = 'pwd';
     $connectionString = "{$dbDriver}:host={$dbHost};port={$dbPort};dbname={$dbName};";
     try {
