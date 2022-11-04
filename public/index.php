@@ -37,7 +37,7 @@ $app->get('/', function ($req, $resp) {
 $app->get('/urls', function ($req, $resp) use ($router) {
     $connection = getConnectionToDB();
     if ($connection === false) {
-        return redirectToMainWithInternalError($this, $resp, $router);
+        return error500Page($this, $resp, $router);
     }
     //МОЖНО РУКАМИ ВВЕСТТИ АДРЕС 127.0.0.1:8000/urls/<НЕСУЩЕСТВУЮЩИЙ ИД>, И САЙТ НЕ ВЫДАСТ 404 ОШИБКИ
     //$queryForUrls = "SELECT urls.id AS urls_id, name, MAX(url_checks.created_at) AS last_check_time, status_code FROM urls LEFT JOIN url_checks ON urls.id = url_checks.url_id GROUP BY urls_id ORDER BY urls_id DESC";
@@ -95,12 +95,17 @@ $app->get('/urls', function ($req, $resp) use ($router) {
 $app->get('/urls/{id}', function ($req, $resp, $args) use ($router) {
     $connection = getConnectionToDB();
     if ($connection === false) {
-        return redirectToMainWithInternalError($this, $resp, $router);
+        return error500Page($this, $resp, $router);
     }
 
     $id = $args['id'];
 
     $urlData = getUrlDataById($connection, $id);
+
+    if ($urlData === false) {
+        return error404Page($this, $resp);
+    }
+
     $params = ['url' => $urlData];
     $urlChecks = getUrlChecksById($connection, $id);
     $params['urlChecks'] = $urlChecks;
@@ -116,7 +121,7 @@ $app->get('/urls/{id}', function ($req, $resp, $args) use ($router) {
 $app -> post('/clearurls', function ($req, $resp) use ($router) {
     $connection = getConnectionToDB();
     if ($connection === false) {
-        return redirectToMainWithInternalError($this, $resp, $router);
+        return error500Page($this, $resp, $router);
     }
 
     $queryForClearing = "TRUNCATE urls, url_checks";
@@ -149,7 +154,7 @@ $app -> post('/urls', function($req, $resp) use ($router) {
 
     $connection = getConnectionToDB();
     if ($connection === false) {
-        return redirectToMainWithInternalError($this, $resp, $router);
+        return error500Page($this, $resp, $router);
     }
 
     $queryForExisting = "SELECT COUNT(*) AS counts FROM urls WHERE name='{$scheme}://{$host}'";
@@ -170,18 +175,18 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
 
     $connection = getConnectionToDB();
     if ($connection === false) {
-        return redirectToMainWithInternalError($this, $resp, $router);
+        return error500Page($this, $resp, $router);
     }
 
     $queryGetUrl = "SELECT name FROM urls WHERE id={$id}";
     $resQueryGetUrl = $connection->query($queryGetUrl);
     $fetchedRes = $resQueryGetUrl -> fetch();
-    $url = $fetchedRes['name'];
     if ($fetchedRes === false) {
         $this -> get('flash') -> addMessage('error', 'При проверке возникла ошибка. Такой записи не существует.');
         return $resp -> withRedirect($router -> urlFor('urls'), 303);
     }
 
+    $url = $fetchedRes['name'];
     $client = new Client(['base_uri' => $url, 'timeout' => 5.0]);
 
     $response = null;
@@ -209,9 +214,9 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
         if (count($titleElements) > 0) {
             $title = optional($titleElements[0]) -> text();
         }
-        $metaKeywordElements = $document -> find ('meta[name=description]');
-        if (count($metaKeywordElements) > 0) {
-            $description = optional($metaKeywordElements[0]) -> content;
+        $metaDescriptionElements = $document -> find ('meta[name=description]');
+        if (count($metaDescriptionElements) > 0) {
+            $description = optional($metaDescriptionElements[0]) -> content;
         }
     }
 
@@ -231,7 +236,9 @@ function getUrlDataById($connection, $id)
     $queryForUrl = "SELECT * FROM urls WHERE id={$id}";
     $resQueryForUrl = $connection -> query($queryForUrl);
     $urlData = $resQueryForUrl -> fetch();
-    return ['id' => $urlData['id'], 'name' => $urlData['name'], 'created_at' => $urlData['created_at']];
+    return $urlData === false
+        ? false
+        : ['id' => $urlData['id'], 'name' => $urlData['name'], 'created_at' => $urlData['created_at']];
 }
 
 function getUrlChecksById($connection, $id)
@@ -252,9 +259,12 @@ function getUrlChecksById($connection, $id)
     return $urlChecks;
 }
 
-function redirectToMainWithInternalError($DIContainer, $resp, $router) {
-    $DIContainer -> get('flash') -> addMessage('error', 'Возникла внутренняя ошибка сервера. Попробуйте выполнить действие позже.');
-    return $resp -> withRedirect($router -> urlFor('main'), 302);
+function error500Page($DIContainer, $resp) {
+    return $DIContainer-> get('renderer') -> render($resp -> withStatus(500), 'error500.phtml');
+}
+
+function error404Page($DIContainer, $resp) {
+    return $DIContainer-> get('renderer') -> render($resp -> withStatus(404), 'error404.phtml');
 }
 
 function getConnectionToDB() {
@@ -262,7 +272,7 @@ function getConnectionToDB() {
     $dbHost = 'localhost';
     $dbPort = '5432';
     $dbName = 'phpproj3test';
-    $dbUserName = 'prozex';
+    $dbUserName = 'dima';
     $dbUserPassword = 'pwd';
     $connectionString = "{$dbDriver}:host={$dbHost};port={$dbPort};dbname={$dbName};";
     try {
