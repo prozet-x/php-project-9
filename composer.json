@@ -5,7 +5,8 @@
     "autoload": {
         "psr-4": {
             "Hexlet\\Code\\": "src/"
-        }
+        },
+        "files": ["./public/nf.php"]
     },
     "authors": [
         {

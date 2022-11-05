@@ -272,7 +272,7 @@ function getConnectionToDB() {
     $dbHost = 'localhost';
     $dbPort = '5432';
     $dbName = 'phpproj3test';
-    $dbUserName = 'dima';
+    $dbUserName = 'prozex';
     $dbUserPassword = 'pwd';
     $connectionString = "{$dbDriver}:host={$dbHost};port={$dbPort};dbname={$dbName};";
     try {
