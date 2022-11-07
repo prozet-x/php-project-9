@@ -7,6 +7,7 @@ use DI\Container;
 use Slim\Middleware\MethodOverrideMiddleware;
 use GuzzleHttp\Client;
 use DiDom\Document;
+use App\Error\Renderer;
 
 session_start();
 
@@ -20,7 +21,9 @@ $container -> set('flash', function () {
 });
 
 $app = AppFactory::createFromContainer($container);
-$app->addErrorMiddleware(true, true, true);
+$errorMiddleware = $app->addErrorMiddleware(true, true, true);
+$errorHandler = $errorMiddleware->getDefaultErrorHandler();
+$errorHandler->registerErrorRenderer('text/html', App\Error\Renderer\HtmlErrorRenderer::class);
 $app->add(MethodOverrideMiddleware::class);
 
 $router = $app->getRouteCollector()->getRouteParser();
