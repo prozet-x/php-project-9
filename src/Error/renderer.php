@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Error\Renderer;
 
 use Slim\Exception\HttpNotFoundException;
+use Slim\Exception\HttpInternalServerErrorException;
 use Slim\Interfaces\ErrorRendererInterface;
 use Throwable;
 
@@ -14,6 +15,8 @@ final class HtmlErrorRenderer implements ErrorRendererInterface
     {
         if ($exception instanceof HttpNotFoundException) {
             return file_get_contents(__DIR__ . '/../../templates/error404.phtml');
+        } else if ($exception instanceof HttpInternalServerErrorException) {
+            return file_get_contents(__DIR__ . '/../../templates/error500.phtml');
         }
         return $exception -> getMessage();
     }

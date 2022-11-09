@@ -7,6 +7,7 @@ use DI\Container;
 use Slim\Middleware\MethodOverrideMiddleware;
 use GuzzleHttp\Client;
 use DiDom\Document;
+use Slim\Exception\HttpInternalServerErrorException;
 use App\Error\Renderer;
 
 session_start();
@@ -38,12 +39,9 @@ $app->get('/', function ($req, $resp) {
 }) -> setName('main');
 
 $app->get('/urls', function ($req, $resp) use ($router) {
-    $connection = getConnectionToDB();
-    if ($connection === false) {
-        return error500Page($this, $resp, $router);
-    }
+    $connection = getConnectionToDB($req);
+
     //МОЖНО РУКАМИ ВВЕСТТИ АДРЕС 127.0.0.1:8000/urls/<НЕСУЩЕСТВУЮЩИЙ ИД>, И САЙТ НЕ ВЫДАСТ 404 ОШИБКИ
-    //$queryForUrls = "SELECT urls.id AS urls_id, name, MAX(url_checks.created_at) AS last_check_time, status_code FROM urls LEFT JOIN url_checks ON urls.id = url_checks.url_id GROUP BY urls_id ORDER BY urls_id DESC";
 
     $queryForUrls = "SELECT
                         urls.id AS id_of_url,
@@ -96,10 +94,7 @@ $app->get('/urls', function ($req, $resp) use ($router) {
 }) -> setName('urls');
 
 $app->get('/urls/{id}', function ($req, $resp, $args) use ($router) {
-    $connection = getConnectionToDB();
-    if ($connection === false) {
-        return error500Page($this, $resp, $router);
-    }
+    $connection = getConnectionToDB($req);
 
     $id = $args['id'];
 
@@ -122,10 +117,7 @@ $app->get('/urls/{id}', function ($req, $resp, $args) use ($router) {
 }) -> setName('urlID');
 
 $app -> post('/clearurls', function ($req, $resp) use ($router) {
-    $connection = getConnectionToDB();
-    if ($connection === false) {
-        return error500Page($this, $resp, $router);
-    }
+    $connection = getConnectionToDB($req);
 
     $queryForClearing = "TRUNCATE urls, url_checks";
     $connection->query($queryForClearing);
@@ -155,10 +147,7 @@ $app -> post('/urls', function($req, $resp) use ($router) {
         return $this -> get('renderer') -> render($resp, 'main.phtml', ['badURL' => true, 'inputedURL' => $inputedURL['name']]);
     }
 
-    $connection = getConnectionToDB();
-    if ($connection === false) {
-        return error500Page($this, $resp, $router);
-    }
+    $connection = getConnectionToDB($req);
 
     $queryForExisting = "SELECT COUNT(*) AS counts FROM urls WHERE name='{$scheme}://{$host}'";
     $resOfQueryForExisting = $connection->query($queryForExisting);
@@ -176,10 +165,7 @@ $app -> post('/urls', function($req, $resp) use ($router) {
 $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
     $id = $args['id'];
 
-    $connection = getConnectionToDB();
-    if ($connection === false) {
-        return error500Page($this, $resp, $router);
-    }
+    $connection = getConnectionToDB($req);
 
     $queryGetUrl = "SELECT name FROM urls WHERE id={$id}";
     $resQueryGetUrl = $connection->query($queryGetUrl);
@@ -270,7 +256,7 @@ function error404Page($DIContainer, $resp) {
     return $DIContainer-> get('renderer') -> render($resp -> withStatus(404), 'error404.phtml');
 }
 
-function getConnectionToDB() {
+function getConnectionToDB($request) {
     $dbDriver = 'pgsql';
     $dbHost = 'localhost';
     $dbPort = '5432';
@@ -282,7 +268,8 @@ function getConnectionToDB() {
         return new PDO($connectionString, $dbUserName, $dbUserPassword, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
     }
     catch (Exception) {
-        return false;
+        throw new HttpInternalServerErrorException($request, 'DB-connection error.');
+        //return false;
     }
 }
 
