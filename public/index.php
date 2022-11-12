@@ -1,14 +1,15 @@
 <?php
-
+// При проверке Авито у меня просто ошибка, а в дем. проекте все иначе. Исправить.
 require __DIR__ . '/../vendor/autoload.php';
 
+use Slim\Exception\HttpNotFoundException;
 use Slim\Factory\AppFactory;
 use DI\Container;
 use Slim\Middleware\MethodOverrideMiddleware;
 use GuzzleHttp\Client;
 use DiDom\Document;
 use Slim\Exception\HttpInternalServerErrorException;
-use App\Error\Renderer;
+use App\Error\Renderer\HtmlErrorRenderer;
 
 session_start();
 
@@ -24,24 +25,18 @@ $container -> set('flash', function () {
 $app = AppFactory::createFromContainer($container);
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 $errorHandler = $errorMiddleware->getDefaultErrorHandler();
-$errorHandler->registerErrorRenderer('text/html', App\Error\Renderer\HtmlErrorRenderer::class);
+$errorHandler->registerErrorRenderer('text/html', HtmlErrorRenderer::class);
 $app->add(MethodOverrideMiddleware::class);
 
 $router = $app->getRouteCollector()->getRouteParser();
 
 $app->get('/', function ($req, $resp) {
-    $params = [];
-    $messages = $this -> get('flash') -> getMessages();
-    if (!empty($messages)) {
-        $params['messages'] = $messages;
-    }
+    $params = addMessagesToParams($this -> get('flash') -> getMessages());
     return $this -> get('renderer') -> render($resp, 'main.phtml', $params);
 }) -> setName('main');
 
 $app->get('/urls', function ($req, $resp) use ($router) {
     $connection = getConnectionToDB($req);
-
-    //МОЖНО РУКАМИ ВВЕСТТИ АДРЕС 127.0.0.1:8000/urls/<НЕСУЩЕСТВУЮЩИЙ ИД>, И САЙТ НЕ ВЫДАСТ 404 ОШИБКИ
 
     $queryForUrls = "SELECT
                         urls.id AS id_of_url,
@@ -84,11 +79,7 @@ $app->get('/urls', function ($req, $resp) use ($router) {
     }
 
     $params = ['urls' => $urls];
-
-    $messages = $this -> get('flash') -> getMessages();
-    if (!empty($messages)) {
-        $params['messages'] = $messages;
-    }
+    $params = addMessagesToParams($this -> get('flash') -> getMessages(), $params);
 
     return $this -> get('renderer') -> render($resp, 'urls.phtml', $params);
 }) -> setName('urls');
@@ -97,21 +88,15 @@ $app->get('/urls/{id}', function ($req, $resp, $args) use ($router) {
     $connection = getConnectionToDB($req);
 
     $id = $args['id'];
-
     $urlData = getUrlDataById($connection, $id);
-
     if ($urlData === false) {
-        return error404Page($this, $resp);
+        throw new HttpNotFoundException($req, 'There is no record with this ID');
     }
 
     $params = ['url' => $urlData];
     $urlChecks = getUrlChecksById($connection, $id);
     $params['urlChecks'] = $urlChecks;
-
-    $messages = $this -> get('flash') -> getMessages();
-    if (!empty($messages)) {
-        $params['messages'] = $messages;
-    }
+    $params = addMessagesToParams($this -> get('flash') -> getMessages(), $params);
 
     return $this -> get('renderer') -> render($resp, 'url.phtml', $params);
 }) -> setName('urlID');
@@ -193,20 +178,18 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
     $h1 = null;
     $title = null;
     $description = null;
-    if ($statusCodeOfResponse === 200) {
-        $document = new Document($bodyOfResponse);
-        $h1Elements = $document->find('h1');
-        if (count($h1Elements) > 0) {
-            $h1 = $h1Elements[0] -> text();
-        }
-        $titleElements = $document -> find ('title');
-        if (count($titleElements) > 0) {
-            $title = optional($titleElements[0]) -> text();
-        }
-        $metaDescriptionElements = $document -> find ('meta[name=description]');
-        if (count($metaDescriptionElements) > 0) {
-            $description = optional($metaDescriptionElements[0]) -> content;
-        }
+    $document = new Document($bodyOfResponse);
+    $h1Elements = $document->find('h1');
+    if (count($h1Elements) > 0) {
+        $h1 = $h1Elements[0] -> text();
+    }
+    $titleElements = $document -> find ('title');
+    if (count($titleElements) > 0) {
+        $title = optional($titleElements[0]) -> text();
+    }
+    $metaDescriptionElements = $document -> find ('meta[name=description]');
+    if (count($metaDescriptionElements) > 0) {
+        $description = optional($metaDescriptionElements[0]) -> content;
     }
 
     try {
@@ -214,7 +197,7 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
         $connection->query($queryForInsertNewCheck);
     }
     catch (Exception) {
-        return $this-> get('renderer') -> render($resp -> withStatus(500), 'error500.phtml');
+        throw new HttpInternalServerErrorException($request, 'Error on adding new record to checks table');
     }
     $this->get('flash')->addMessage('success', 'Страница успешно проверена');
     return $resp->withRedirect($router->urlFor('urlID', ['id' => $id]), 302);
@@ -248,14 +231,6 @@ function getUrlChecksById($connection, $id)
     return $urlChecks;
 }
 
-function error500Page($DIContainer, $resp) {
-    return $DIContainer-> get('renderer') -> render($resp -> withStatus(500), 'error500.phtml');
-}
-
-function error404Page($DIContainer, $resp) {
-    return $DIContainer-> get('renderer') -> render($resp -> withStatus(404), 'error404.phtml');
-}
-
 function getConnectionToDB($request) {
     $dbDriver = 'pgsql';
     $dbHost = 'localhost';
@@ -269,8 +244,11 @@ function getConnectionToDB($request) {
     }
     catch (Exception) {
         throw new HttpInternalServerErrorException($request, 'DB-connection error.');
-        //return false;
     }
+}
+
+function addMessagesToParams($messages, $params = []) {
+    return empty($messages) ? $params : [...$params, 'messages' => $messages];
 }
 
 $app->run();
