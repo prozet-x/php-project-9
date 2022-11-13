@@ -137,30 +137,29 @@ $app -> post('/urls', function($req, $resp) use ($router) {
     $queryForExisting = "SELECT COUNT(*) AS counts FROM urls WHERE name='{$scheme}://{$host}'";
     $resOfQueryForExisting = $connection->query($queryForExisting);
     if (($resOfQueryForExisting -> fetch())['counts'] === 0) {
-        $queryForInsertNewData = "INSERT INTO urls (name, created_at) VALUES ('{$scheme}://{$host}', date_trunc('second', current_timestamp))";
+        $name = "{$scheme}://{$host}";
+        $queryForInsertNewData = "INSERT INTO urls (name, created_at) VALUES ('{$name}', date_trunc('second', current_timestamp))";
         $connection->query($queryForInsertNewData);
         $this -> get('flash') -> addMessage('success', 'Страница успешно добавлена');
-    } else {
-        $this -> get('flash') -> addMessage('warning', 'Страница уже существует');
+        $id = getIdByName($connection, $name);
+        return $resp->withRedirect($router->urlFor('urlID', ['id' => $id]), 302);
     }
+
+    $this -> get('flash') -> addMessage('warning', 'Страница уже существует');
     return $resp -> withRedirect($router -> urlFor('main'), 302);
     //INSTALL PGSQL-provider: apt-get install php-pgsql. Then restart appache. And you will need to create a pass for user
 });
 
 $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
     $id = $args['id'];
-
     $connection = getConnectionToDB($req);
-
-    $queryGetUrl = "SELECT name FROM urls WHERE id={$id}";
-    $resQueryGetUrl = $connection->query($queryGetUrl);
-    $fetchedRes = $resQueryGetUrl -> fetch();
-    if ($fetchedRes === false) {
+    $urlData = getUrlDataById($connection, $id);
+    if ($urlData === false) {
         $this -> get('flash') -> addMessage('error', 'При проверке возникла ошибка. Такой записи не существует.');
-        return $resp -> withRedirect($router -> urlFor('urls'), 303);
+        return $resp -> withStatus(404) -> withRedirect($router -> urlFor('urls'));
     }
 
-    $url = $fetchedRes['name'];
+    $url = $urlData['name'];
     $client = new Client(['base_uri' => $url, 'timeout' => 5.0]);
 
     $response = null;
@@ -197,7 +196,7 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
         $connection->query($queryForInsertNewCheck);
     }
     catch (Exception) {
-        throw new HttpInternalServerErrorException($request, 'Error on adding new record to checks table');
+        throw new HttpInternalServerErrorException($req, 'Error on adding new record to checks table');
     }
     $this->get('flash')->addMessage('success', 'Страница успешно проверена');
     return $resp->withRedirect($router->urlFor('urlID', ['id' => $id]), 302);
@@ -211,6 +210,14 @@ function getUrlDataById($connection, $id)
     return $urlData === false
         ? false
         : ['id' => $urlData['id'], 'name' => $urlData['name'], 'created_at' => $urlData['created_at']];
+}
+
+function getIdByName($connection, $name)
+{
+    $queryForUrl = "SELECT id FROM urls WHERE name='{$name}'";
+    $resQueryForUrl = $connection -> query($queryForUrl);
+    $urlData = $resQueryForUrl -> fetch();
+    return $urlData === false ? false : $urlData['id'];
 }
 
 function getUrlChecksById($connection, $id)
