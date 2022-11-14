@@ -157,8 +157,6 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
     $urlData = getUrlDataById($connection, $id);
     if ($urlData === false) {
         throw new HttpInternalServerErrorException($req, 'This page is not exists.');
-        /*$this -> get('flash') -> addMessage('error', 'При проверке возникла ошибка. Такой записи не существует.');
-        return $resp -> withStatus(404) -> withRedirect($router -> urlFor('urls'));*/
     }
 
     $url = $urlData['name'];
