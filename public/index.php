@@ -239,12 +239,19 @@ function getUrlChecksById($connection, $id)
 }
 
 function getConnectionToDB($request) {
+    $databaseUrl = parse_url($_ENV['DATABASE_URL']);
+    $username = $databaseUrl['user']; // janedoe
+    $password = $databaseUrl['pass']; // mypassword
+    $host = $databaseUrl['host']; // localhost
+    $port = $databaseUrl['port']; // 5432
+    $nameOfDB = ltrim($databaseUrl['path'], '/'); // mydb
+
     $dbDriver = 'pgsql';
-    $dbHost = 'localhost';
-    $dbPort = '5432';
-    $dbName = 'phpproj3test';
-    $dbUserName = 'dima';
-    $dbUserPassword = 'pwd';
+    $dbHost = $host; //'localhost';
+    $dbPort = $port; //'5432';
+    $dbName = $nameOfDB; //'phpproj3test';
+    $dbUserName = $username; //'dima';
+    $dbUserPassword = $password; //'pwd';
     $connectionString = "{$dbDriver}:host={$dbHost};port={$dbPort};dbname={$dbName};";
     try {
         return new PDO($connectionString, $dbUserName, $dbUserPassword, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
