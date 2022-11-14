@@ -3,13 +3,13 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Slim\Exception\HttpNotFoundException;
+use Slim\Exception\HttpInternalServerErrorException;
+use App\Error\Renderer\HtmlErrorRenderer;
 use Slim\Factory\AppFactory;
 use DI\Container;
 use Slim\Middleware\MethodOverrideMiddleware;
 use GuzzleHttp\Client;
 use DiDom\Document;
-use Slim\Exception\HttpInternalServerErrorException;
-use App\Error\Renderer\HtmlErrorRenderer;
 
 session_start();
 
@@ -32,6 +32,7 @@ $router = $app->getRouteCollector()->getRouteParser();
 
 $app->get('/', function ($req, $resp) {
     $params = addMessagesToParams($this -> get('flash') -> getMessages());
+    $params['activeMenuItem'] = 'main';
     return $this -> get('renderer') -> render($resp, 'main.phtml', $params);
 }) -> setName('main');
 
@@ -80,7 +81,7 @@ $app->get('/urls', function ($req, $resp) use ($router) {
 
     $params = ['urls' => $urls];
     $params = addMessagesToParams($this -> get('flash') -> getMessages(), $params);
-
+    $params['activeMenuItem'] = 'urls';
     return $this -> get('renderer') -> render($resp, 'urls.phtml', $params);
 }) -> setName('urls');
 
@@ -146,7 +147,7 @@ $app -> post('/urls', function($req, $resp) use ($router) {
     }
 
     $this -> get('flash') -> addMessage('warning', 'Страница уже существует');
-    return $resp -> withRedirect($router -> urlFor('main'), 302);
+    return $resp -> withStatus(409) -> withRedirect($router -> urlFor('main'));
     //INSTALL PGSQL-provider: apt-get install php-pgsql. Then restart appache. And you will need to create a pass for user
 });
 
@@ -155,14 +156,13 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
     $connection = getConnectionToDB($req);
     $urlData = getUrlDataById($connection, $id);
     if ($urlData === false) {
-        $this -> get('flash') -> addMessage('error', 'При проверке возникла ошибка. Такой записи не существует.');
-        return $resp -> withStatus(404) -> withRedirect($router -> urlFor('urls'));
+        throw new HttpInternalServerErrorException($req, 'This page is not exists.');
+        /*$this -> get('flash') -> addMessage('error', 'При проверке возникла ошибка. Такой записи не существует.');
+        return $resp -> withStatus(404) -> withRedirect($router -> urlFor('urls'));*/
     }
 
     $url = $urlData['name'];
     $client = new Client(['base_uri' => $url, 'timeout' => 5.0]);
-
-    $response = null;
     try {
         $response = $client -> request('GET', '/');
     }
@@ -252,6 +252,7 @@ function getConnectionToDB($request) {
     $dbName = $nameOfDB; //'phpproj3test';
     $dbUserName = $username; //'dima';
     $dbUserPassword = $password; //'pwd';
+
     $connectionString = "{$dbDriver}:host={$dbHost};port={$dbPort};dbname={$dbName};";
     try {
         return new PDO($connectionString, $dbUserName, $dbUserPassword, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
