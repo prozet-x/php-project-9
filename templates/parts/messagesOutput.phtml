@@ -1,0 +1,9 @@
+<?php
+
+if (isset($messages)):
+    foreach ($messages as $messagesGroup => $messagesOfGroup):
+        foreach ($messagesOfGroup as $message): ?>
+            <div class="alert <?= getStyleForAlert($messagesGroup)?>" role="alert"><?= $message?></div>
+        <?php endforeach;
+    endforeach;
+endif; ?>
