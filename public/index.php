@@ -247,23 +247,11 @@ function getConnectionToDB($request) {
     $nameOfDB = ltrim($databaseUrl['path'], '/'); // mydb
 
     $dbDriver = 'pgsql';
-<<<<<<< HEAD
     $dbHost = $host; //'localhost';
     $dbPort = $port; //'5432';
     $dbName = $nameOfDB; //'phpproj3test';
     $dbUserName = $username; //'dima';
     $dbUserPassword = $password; //'pwd';
-<<<<<<< HEAD
-
-=======
-=======
-    $dbHost = 'localhost';
-    $dbPort = '5432';
-    $dbName = 'phpproj3test';
-    $dbUserName = 'prozex';
-    $dbUserPassword = 'pwd';
->>>>>>> 2aaf6df69f13dfa61f6222dacec81a8e14ba9e18
->>>>>>> 1509777d217bf6ced54f04579181101ad3f3dce5
     $connectionString = "{$dbDriver}:host={$dbHost};port={$dbPort};dbname={$dbName};";
     try {
         return new PDO($connectionString, $dbUserName, $dbUserPassword, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
