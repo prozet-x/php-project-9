@@ -8,7 +8,8 @@
         },
         "files": [
             "src/Error/renderer.php",
-            "src/getStyleForAlert.php"
+            "src/messages.php",
+            "src/db.php"
         ]
     },
     "authors": [

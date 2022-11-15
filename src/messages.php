@@ -8,3 +8,7 @@ function getStyleForAlert($messagesGroup) {
     };
     return 'alert-danger';
 }
+
+function addMessagesToParams($messages, $params = []) {
+    return empty($messages) ? $params : [...$params, 'messages' => $messages];
+}
