@@ -1,4 +1,5 @@
 <?php
+
 // При проверке Авито у меня просто ошибка, а в дем. проекте все иначе. Исправить.
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -111,7 +112,7 @@ $app -> post('/clearurls', function ($req, $resp) use ($router) {
     return $resp -> withRedirect($router -> urlFor('main'), 302);
 });
 
-$app -> post('/urls', function($req, $resp) use ($router) {
+$app -> post('/urls', function ($req, $resp) use ($router) {
     $inputedURL = $req -> getParsedBodyParam('url', null);
 
     if ($inputedURL === null) {
@@ -130,7 +131,8 @@ $app -> post('/urls', function($req, $resp) use ($router) {
         -> rule('contains', 'host', '.');
 
     if (!($validator->validate())) {
-        return $this -> get('renderer') -> render($resp, 'main.phtml', ['badURL' => true, 'inputedURL' => $inputedURL['name']]);
+        $params = ['badURL' => true, 'inputedURL' => $inputedURL['name']];
+        return $this -> get('renderer') -> render($resp, 'main.phtml', $params);
     }
 
     $connection = getConnectionToDB($req);
@@ -139,7 +141,10 @@ $app -> post('/urls', function($req, $resp) use ($router) {
     $resOfQueryForExisting = $connection->query($queryForExisting);
     if (($resOfQueryForExisting -> fetch())['counts'] === 0) {
         $name = "{$scheme}://{$host}";
-        $queryForInsertNewData = "INSERT INTO urls (name, created_at) VALUES ('{$name}', date_trunc('second', current_timestamp))";
+        $queryForInsertNewData = "INSERT INTO 
+                                    urls (name, created_at)
+                                  VALUES
+                                      ('{$name}', date_trunc('second', current_timestamp))";
         $connection->query($queryForInsertNewData);
         $this -> get('flash') -> addMessage('success', 'Страница успешно добавлена');
         $id = getIdByName($connection, $name);
@@ -148,7 +153,8 @@ $app -> post('/urls', function($req, $resp) use ($router) {
 
     $this -> get('flash') -> addMessage('warning', 'Страница уже существует');
     return $resp -> withStatus(409) -> withRedirect($router -> urlFor('main'));
-    //INSTALL PGSQL-provider: apt-get install php-pgsql. Then restart appache. And you will need to create a pass for user
+    //INSTALL PGSQL-provider: apt-get install php-pgsql.
+    //Then restart appache. And you will need to create a pass for user
 });
 
 $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
@@ -163,8 +169,7 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
     $client = new Client(['base_uri' => $url, 'timeout' => 5.0]);
     try {
         $response = $client -> request('GET', '/');
-    }
-    catch (Exception) {
+    } catch (Exception) {
         $this -> get('flash') -> addMessage('error', 'Произошла ошибка при проверке');
         return $resp -> withStatus(404) -> withRedirect($router -> urlFor('urlID', ['id' => $id]));
     }
@@ -180,20 +185,28 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
     if (count($h1Elements) > 0) {
         $h1 = $h1Elements[0] -> text();
     }
-    $titleElements = $document -> find ('title');
+    $titleElements = $document -> find('title');
     if (count($titleElements) > 0) {
         $title = optional($titleElements[0]) -> text();
     }
-    $metaDescriptionElements = $document -> find ('meta[name=description]');
+    $metaDescriptionElements = $document -> find('meta[name=description]');
     if (count($metaDescriptionElements) > 0) {
         $description = optional($metaDescriptionElements[0]) -> content;
     }
 
     try {
-        $queryForInsertNewCheck = "INSERT INTO url_checks (url_id, status_code, created_at, h1, title, description) VALUES ('{$id}', {$statusCodeOfResponse}, date_trunc('second', current_timestamp), '{$h1}', '{$title}', '{$description}')";
+        $queryForInsertNewCheck = "INSERT INTO
+                                    url_checks (url_id, status_code, created_at, h1, title, description)
+                                  VALUES
+                                      ('{$id}',
+                                       {$statusCodeOfResponse},
+                                       date_trunc('second', current_timestamp),
+                                       '{$h1}',
+                                       '{$title}',
+                                       '{$description}'
+                                      )";
         $connection->query($queryForInsertNewCheck);
-    }
-    catch (Exception) {
+    } catch (Exception) {
         throw new HttpInternalServerErrorException($req, 'Error on adding new record to checks table');
     }
     $this->get('flash')->addMessage('success', 'Страница успешно проверена');
