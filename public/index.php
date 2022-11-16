@@ -124,11 +124,12 @@ $app -> post('/urls', function ($req, $resp) use ($router) {
     $urlParsed = parse_url($url);
     $scheme = $urlParsed['scheme'];
     $host = $urlParsed['host'];
-    $validator = new Valitron\Validator(array('url' => $url, 'host' => $host));
+    //$validator = new Valitron\Validator(array('url' => $url, 'host' => $host));
+    $validator = new Valitron\Validator(array('url' => $url));
     $validator -> rule('required', 'url')
         -> rule('lengthMax', 'url', 255)
-        -> rule('url', 'url')
-        -> rule('contains', 'host', '.');
+        -> rule('url', 'url');
+        //-> rule('contains', 'host', '.');
 
     if (!($validator->validate())) {
         $params = ['badURL' => true, 'inputedURL' => $inputedURL['name']];
