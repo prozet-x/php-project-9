@@ -103,14 +103,14 @@ $app->get('/urls/{id}', function ($req, $resp, $args) use ($router) {
     return $this -> get('renderer') -> render($resp, 'url.phtml', $params);
 }) -> setName('urlID');
 
-$app -> post('/clearurls', function ($req, $resp) use ($router) {
+/*$app -> post('/clearurls', function ($req, $resp) use ($router) {
     $connection = getConnectionToDB($req);
 
     $queryForClearing = "TRUNCATE urls, url_checks";
     $connection->query($queryForClearing);
     $this -> get('flash') -> addMessage('warning', 'Таблицы очищены');
     return $resp -> withRedirect($router -> urlFor('main'), 302);
-});
+});*/
 
 $app -> post('/urls', function ($req, $resp) use ($router) {
     $inputedURL = $req -> getParsedBodyParam('url', null);
