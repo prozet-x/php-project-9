@@ -1,9 +1,12 @@
 <?php
 
-function getUrlDataById(PDO $connection, string $id): ?array
+function getUrlDataById(PDO $connection, string $id, Psr\Http\Message\ServerRequestInterface $request): ?array
 {
     $queryForUrl = "SELECT * FROM urls WHERE id={$id}";
     $resQueryForUrl = $connection -> query($queryForUrl);
+    if ($resQueryForUrl === false) {
+        throw new HttpInternalServerErrorException($request, 'Bad request to DB');
+    }
     $urlData = $resQueryForUrl -> fetch();
     return $urlData === false
         ? null
