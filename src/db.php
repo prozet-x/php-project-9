@@ -5,7 +5,7 @@ function getUrlDataById(PDO $connection, string $id, Psr\Http\Message\ServerRequ
     $queryForUrl = "SELECT * FROM urls WHERE id={$id}";
     $resQueryForUrl = $connection -> query($queryForUrl);
     if ($resQueryForUrl === false) {
-        throw new HttpInternalServerErrorException($request, 'Bad request to DB');
+        throw new Slim\Exception\HttpInternalServerErrorException($request, 'Bad request to DB');
     }
     $urlData = $resQueryForUrl -> fetch();
     return $urlData === false
@@ -65,6 +65,6 @@ function getConnectionToDB(Psr\Http\Message\ServerRequestInterface $request)
     try {
         return new PDO($connectionString, $dbUserName, $dbUserPassword, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
     } catch (Exception) {
-        throw new HttpInternalServerErrorException($request, 'DB-connection error.');
+        throw new Slim\Exception\HttpInternalServerErrorException($request, 'DB-connection error.');
     }
 }
