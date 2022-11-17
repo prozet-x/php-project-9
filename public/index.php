@@ -183,7 +183,7 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
     $description = null;
     $document = new Document($bodyOfResponse);
     $h1Elements = $document->find('h1');
-    if (count($h1Elements) > 0) {
+    if (count($h1Elements) > 0 and $h1Elements[0] instanceof DiDom\Element) {
         $h1 = $h1Elements[0] -> text();
     }
     $titleElements = $document -> find('title');
