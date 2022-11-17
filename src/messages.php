@@ -1,6 +1,6 @@
 <?php
 
-function getStyleForAlert($messagesGroup)
+function getStyleForAlert(string $messagesGroup)
 {
     if ($messagesGroup === 'success') {
         return 'alert-success';
@@ -11,7 +11,7 @@ function getStyleForAlert($messagesGroup)
     return 'alert-danger';
 }
 
-function addMessagesToParams($messages, $params = [])
+function addMessagesToParams(array $messages, array $params = [])
 {
     return empty($messages) ? $params : [...$params, 'messages' => $messages];
 }
