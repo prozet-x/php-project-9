@@ -1,6 +1,6 @@
 <?php
 
-function getUrlDataById(PDO $connection, $id): ?array
+function getUrlDataById(PDO $connection, string $id): ?array
 {
     $queryForUrl = "SELECT * FROM urls WHERE id={$id}";
     $resQueryForUrl = $connection -> query($queryForUrl);
@@ -10,7 +10,7 @@ function getUrlDataById(PDO $connection, $id): ?array
         : ['id' => $urlData['id'], 'name' => $urlData['name'], 'created_at' => $urlData['created_at']];
 }
 
-function getIdByName($connection, $name)
+function getIdByName(PDO $connection, string $name)
 {
     $queryForUrl = "SELECT id FROM urls WHERE name='{$name}'";
     $resQueryForUrl = $connection -> query($queryForUrl);
@@ -18,7 +18,7 @@ function getIdByName($connection, $name)
     return $urlData === false ? false : $urlData['id'];
 }
 
-function getUrlChecksById($connection, $id)
+function getUrlChecksById(PDO $connection, string $id)
 {
     $queryForUrlChecks = "SELECT * FROM url_checks WHERE url_id={$id} ORDER BY id DESC";
     $resQueryForUrlChecks = $connection -> query($queryForUrlChecks);
@@ -36,7 +36,7 @@ function getUrlChecksById($connection, $id)
     return $urlChecks;
 }
 
-function getConnectionToDB($request)
+function getConnectionToDB(Psr\Http\Message\ServerRequestInterface $request)
 {
     $databaseUrl = parse_url($_ENV['DATABASE_URL']);
     $username = $databaseUrl['user']; // janedoe
