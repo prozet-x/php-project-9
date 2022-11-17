@@ -97,7 +97,7 @@ $app->get('/urls/{id}', function ($req, $resp, $args) {
     }
 
     $params = ['url' => $urlData];
-    $urlChecks = getUrlChecksById($connection, $id);
+    $urlChecks = getUrlChecksById($connection, $id, $req);
     $params['urlChecks'] = $urlChecks;
     $params = addMessagesToParams($this -> get('flash') -> getMessages(), $params);
 
@@ -140,7 +140,7 @@ $app -> post('/urls', function ($req, $resp) use ($router) {
     $connection = getConnectionToDB($req);
 
     $UrlName = "{$scheme}://{$host}";
-    $existingId = getIdByName($connection, $UrlName);
+    $existingId = getIdByName($connection, $UrlName, $req);
     if ($existingId === false) {
         $queryForInsertNewData = "INSERT INTO 
                                     urls (name, created_at)
@@ -148,7 +148,7 @@ $app -> post('/urls', function ($req, $resp) use ($router) {
                                       ('{$UrlName}', date_trunc('second', current_timestamp))";
         $connection->query($queryForInsertNewData);
         $this -> get('flash') -> addMessage('success', 'Страница успешно добавлена');
-        $id = getIdByName($connection, $UrlName);
+        $id = getIdByName($connection, $UrlName, $req);
         return $resp->withRedirect($router->urlFor('urlID', ['id' => $id]), 302);
     }
 

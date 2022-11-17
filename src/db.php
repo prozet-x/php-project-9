@@ -13,18 +13,24 @@ function getUrlDataById(PDO $connection, string $id, Psr\Http\Message\ServerRequ
         : ['id' => $urlData['id'], 'name' => $urlData['name'], 'created_at' => $urlData['created_at']];
 }
 
-function getIdByName(PDO $connection, string $name)
+function getIdByName(PDO $connection, string $name, Psr\Http\Message\ServerRequestInterface $request)
 {
     $queryForUrl = "SELECT id FROM urls WHERE name='{$name}'";
     $resQueryForUrl = $connection -> query($queryForUrl);
+    if ($resQueryForUrl === false) {
+        throw new Slim\Exception\HttpInternalServerErrorException($request, 'Bad request to DB');
+    }
     $urlData = $resQueryForUrl -> fetch();
     return $urlData === false ? false : $urlData['id'];
 }
 
-function getUrlChecksById(PDO $connection, string $id)
+function getUrlChecksById(PDO $connection, string $id, Psr\Http\Message\ServerRequestInterface $request)
 {
     $queryForUrlChecks = "SELECT * FROM url_checks WHERE url_id={$id} ORDER BY id DESC";
     $resQueryForUrlChecks = $connection -> query($queryForUrlChecks);
+    if ($resQueryForUrlChecks === false) {
+        throw new Slim\Exception\HttpInternalServerErrorException($request, 'Bad request to DB');
+    }
     $urlChecks = [];
     foreach ($resQueryForUrlChecks as $row) {
         $urlChecks[] = [
