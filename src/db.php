@@ -1,12 +1,12 @@
 <?php
 
-function getUrlDataById(PDO $connection, $id): ?int
+function getUrlDataById(PDO $connection, $id): ?array
 {
     $queryForUrl = "SELECT * FROM urls WHERE id={$id}";
     $resQueryForUrl = $connection -> query($queryForUrl);
     $urlData = $resQueryForUrl -> fetch();
     return $urlData === false
-        ? false
+        ? null
         : ['id' => $urlData['id'], 'name' => $urlData['name'], 'created_at' => $urlData['created_at']];
 }
 
