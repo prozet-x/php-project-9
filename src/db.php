@@ -1,6 +1,6 @@
 <?php
 
-function getUrlDataById($connection, $id)
+function getUrlDataById(PDO $connection, $id): ?int
 {
     $queryForUrl = "SELECT * FROM urls WHERE id={$id}";
     $resQueryForUrl = $connection -> query($queryForUrl);
