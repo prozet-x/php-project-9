@@ -15,7 +15,7 @@ final class HtmlErrorRenderer implements ErrorRendererInterface
     {
         if ($exception instanceof HttpNotFoundException) {
             return file_get_contents(__DIR__ . '/../../templates/error404.phtml');
-        } else if ($exception instanceof HttpInternalServerErrorException) {
+        } elseif ($exception instanceof HttpInternalServerErrorException) {
             return file_get_contents(__DIR__ . '/../../templates/error500.phtml');
         }
         return $exception -> getMessage();

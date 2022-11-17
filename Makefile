@@ -7,7 +7,7 @@ start:
 	php -S 0.0.0.0:$(PORT) -t public
 
 lint:
-	composer exec --verbose phpcs -- --standard=PSR12 --colors -v public
+	composer exec --verbose phpcs -- --standard=PSR12 --colors -v public src
 
 db-reset:
 	dropdb phpproj3 || true

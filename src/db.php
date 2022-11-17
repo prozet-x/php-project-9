@@ -36,7 +36,8 @@ function getUrlChecksById($connection, $id)
     return $urlChecks;
 }
 
-function getConnectionToDB($request) {
+function getConnectionToDB($request)
+{
     $databaseUrl = parse_url($_ENV['DATABASE_URL']);
     $username = $databaseUrl['user']; // janedoe
     $password = $databaseUrl['pass']; // mypassword
@@ -60,8 +61,7 @@ function getConnectionToDB($request) {
     $connectionString = "{$dbDriver}:host={$dbHost};port={$dbPort};dbname={$dbName};";
     try {
         return new PDO($connectionString, $dbUserName, $dbUserPassword, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-    }
-    catch (Exception) {
+    } catch (Exception) {
         throw new HttpInternalServerErrorException($request, 'DB-connection error.');
     }
 }
