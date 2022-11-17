@@ -46,11 +46,11 @@ function getConnectionToDB($request)
     $nameOfDB = ltrim($databaseUrl['path'], '/'); // mydb
 
     $dbDriver = 'pgsql';
-    $dbHost = $host; //'localhost';
-    $dbPort = $port; //'5432';
-    $dbName = $nameOfDB; //'phpproj3test';
-    $dbUserName = $username; //'dima';
-    $dbUserPassword = $password; //'pwd';
+    $dbHost = $host;
+    $dbPort = $port;
+    $dbName = $nameOfDB;
+    $dbUserName = $username;
+    $dbUserPassword = $password;
 
     /*$dbHost = 'localhost';
     $dbPort = '5432';

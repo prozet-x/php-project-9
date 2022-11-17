@@ -92,7 +92,7 @@ $app->get('/urls/{id}', function ($req, $resp, $args) {
 
     $id = $args['id'];
     $urlData = getUrlDataById($connection, $id);
-    if ($urlData === null) {
+    if (is_null($urlData)) {
         throw new HttpNotFoundException($req, 'There is no record with this ID');
     }
 
@@ -162,7 +162,7 @@ $app->post('/urls/{id}/checks', function ($req, $resp, $args) use ($router) {
     $id = $args['id'];
     $connection = getConnectionToDB($req);
     $urlData = getUrlDataById($connection, $id);
-    if ($urlData === null) {
+    if (is_null($urlData)) {
         throw new HttpInternalServerErrorException($req, 'This page is not exists.');
     }
 
