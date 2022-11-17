@@ -25,7 +25,7 @@ $container -> set('flash', function () {
 
 $app = AppFactory::createFromContainer($container);
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
-$errorHandler = $errorMiddleware->getDefaultErrorHandler()->registerErrorRenderer('text/html', HtmlErrorRenderer::class);
+$errorMiddleware->getDefaultErrorHandler()->registerErrorRenderer('text/html', HtmlErrorRenderer::class);
 /*$errorHandler = $errorMiddleware->getDefaultErrorHandler();
 $errorHandler->registerErrorRenderer('text/html', HtmlErrorRenderer::class);*/
 $app->add(MethodOverrideMiddleware::class);
