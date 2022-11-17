@@ -25,9 +25,10 @@ $container -> set('flash', function () {
 
 $app = AppFactory::createFromContainer($container);
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
-$errorMiddleware->getDefaultErrorHandler()->registerErrorRenderer('text/html', HtmlErrorRenderer::class);
-/*$errorHandler = $errorMiddleware->getDefaultErrorHandler();
-$errorHandler->registerErrorRenderer('text/html', HtmlErrorRenderer::class);*/
+$errorHandler = $errorMiddleware->getDefaultErrorHandler();
+if ($errorHandler instanceof Slim\Handlers\ErrorHandler) {
+    $errorHandler->registerErrorRenderer('text/html', HtmlErrorRenderer::class);
+}
 $app->add(MethodOverrideMiddleware::class);
 
 $router = $app->getRouteCollector()->getRouteParser();
