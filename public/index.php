@@ -133,7 +133,7 @@ $app -> post('/urls', function ($req, $resp) use ($router) {
 
     if (!($validator->validate())) {
         $params = ['badURL' => true, 'inputedURL' => $inputedURL['name']];
-        return $this -> get('renderer') -> render($resp, 'main.phtml', $params);
+        return $this -> get('renderer') -> render($resp -> withStatus(422), 'main.phtml', $params);
     }
 
     $connection = getConnectionToDB($req);
@@ -152,7 +152,7 @@ $app -> post('/urls', function ($req, $resp) use ($router) {
     }
 
     $this -> get('flash') -> addMessage('warning', 'Страница уже существует');
-    return $resp -> withStatus(422) -> withRedirect($router->urlFor('urlID', ['id' => $existingId]));
+    return $resp -> withStatus(409) -> withRedirect($router->urlFor('urlID', ['id' => $existingId]));
     //INSTALL PGSQL-provider: apt-get install php-pgsql.
     //Then restart appache. And you will need to create a pass for user
 });
