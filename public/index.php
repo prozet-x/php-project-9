@@ -25,8 +25,9 @@ $container -> set('flash', function () {
 
 $app = AppFactory::createFromContainer($container);
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
-$errorHandler = $errorMiddleware->getDefaultErrorHandler();
-$errorHandler->registerErrorRenderer('text/html', HtmlErrorRenderer::class);
+$errorHandler = $errorMiddleware->getDefaultErrorHandler()->registerErrorRenderer('text/html', HtmlErrorRenderer::class);
+/*$errorHandler = $errorMiddleware->getDefaultErrorHandler();
+$errorHandler->registerErrorRenderer('text/html', HtmlErrorRenderer::class);*/
 $app->add(MethodOverrideMiddleware::class);
 
 $router = $app->getRouteCollector()->getRouteParser();
@@ -37,7 +38,7 @@ $app->get('/', function ($req, $resp) {
     return $this -> get('renderer') -> render($resp, 'main.phtml', $params);
 }) -> setName('main');
 
-$app->get('/urls', function ($req, $resp) use ($router) {
+$app->get('/urls', function ($req, $resp) {
     $connection = getConnectionToDB($req);
 
     $queryForUrls = "SELECT
@@ -86,7 +87,7 @@ $app->get('/urls', function ($req, $resp) use ($router) {
     return $this -> get('renderer') -> render($resp, 'urls.phtml', $params);
 }) -> setName('urls');
 
-$app->get('/urls/{id}', function ($req, $resp, $args) use ($router) {
+$app->get('/urls/{id}', function ($req, $resp, $args) {
     $connection = getConnectionToDB($req);
 
     $id = $args['id'];
