@@ -138,22 +138,21 @@ $app -> post('/urls', function ($req, $resp) use ($router) {
 
     $connection = getConnectionToDB($req);
 
-    $queryForExisting = "SELECT COUNT(*) AS counts FROM urls WHERE name='{$scheme}://{$host}'";
-    $resOfQueryForExisting = $connection->query($queryForExisting);
-    if (($resOfQueryForExisting -> fetch())['counts'] === 0) {
-        $name = "{$scheme}://{$host}";
+    $UrlName = "{$scheme}://{$host}";
+    $existingId = getIdByName($connection, $UrlName);
+    if ($existingId === false) {
         $queryForInsertNewData = "INSERT INTO 
                                     urls (name, created_at)
                                   VALUES
-                                      ('{$name}', date_trunc('second', current_timestamp))";
+                                      ('{$UrlName}', date_trunc('second', current_timestamp))";
         $connection->query($queryForInsertNewData);
         $this -> get('flash') -> addMessage('success', 'Страница успешно добавлена');
-        $id = getIdByName($connection, $name);
+        $id = getIdByName($connection, $UrlName);
         return $resp->withRedirect($router->urlFor('urlID', ['id' => $id]), 302);
     }
 
     $this -> get('flash') -> addMessage('warning', 'Страница уже существует');
-    return $resp -> withStatus(409) -> withRedirect($router -> urlFor('main'));
+    return $resp -> withStatus(409) -> withRedirect($router->urlFor('urlID', ['id' => $existingId]));
     //INSTALL PGSQL-provider: apt-get install php-pgsql.
     //Then restart appache. And you will need to create a pass for user
 });
